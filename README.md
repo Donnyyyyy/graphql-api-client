@@ -101,5 +101,7 @@ client.mutate('mutationName', {
 
 Returns a ``Promise`` resolving single ``object`` containing keys whose names equal to ``mutationName``
 
+## Notes
 
+Also supports file uploads, just set a variable to file instance. Backend should handle ``multipart/farm-data`` requests for graphql this way. See [graphql-multipart-request-spec](https://github.com/jaydenseric/graphql-multipart-request-spec) for more info.
 
