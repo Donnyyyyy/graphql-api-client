@@ -37,8 +37,14 @@ export default class GraphqlClient {
 	get go() {
 		return (...args) => {
 			return this._client(...args)
-				.then(this.onData)
-				.catch(this.onError);
+				.then((data) => {
+					this.onData(data);
+					return data;
+				})
+				.catch((error) => {
+					this.onError(error);
+					return error;
+				});
 		};
 	}
 
@@ -48,22 +54,26 @@ export default class GraphqlClient {
 		this._client = client(this.apiUrl, this.params);
 	}
 
-	init(schema, queries, mutations, synced, onData, onError) {
-		this.schema = schema;
+	init(schemaUrl = '/schema.json', queries = [], mutations = [], synced = [], onData = () => { }, onError = () => { }) {
 		this.queries = queries;
 		this.mutations = mutations;
 		this.synced = synced;
 		this.onData = onData;
 		this.onError = onError;
 
-		var supportedQueries = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.queryType.name)[0].fields;
-		this._updateApiQueries(supportedQueries);
+		fetch(schemaUrl)
+			.then(response => response.json())
+			.then(schema => this.schema = schema)
+			.then(() => {
+				var supportedQueries = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.queryType.name)[0].fields;
+				this._updateApiQueries(supportedQueries);
 
-		var supportedMutations = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.mutationType.name)[0].fields;
-		this._updateApiMutations(supportedMutations);
+				var supportedMutations = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.mutationType.name)[0].fields;
+				this._updateApiMutations(supportedMutations);
 
-		this._updateSyncList(supportedQueries)
-			.then((syncedEntities) => this.syncAll(syncedEntities));
+				this._updateSyncList(supportedQueries)
+					.then((syncedEntities) => this.syncAll(syncedEntities));
+			});
 	}
 
 	mutate(mutation, args) {

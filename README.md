@@ -11,24 +11,19 @@ import GraphqlCLient from 'graphql-api-client';
 // Your api schema
 import schema from '../schema.json';
 
-let client = new GraphqlCLient('http://put.your/graphql/endpoit/here', {
-   headers: {
-      Authorization: `Token ${sometoken}`
-   }
-});
-
-client.init(
-   // Queries you gonna use
-   ['login', ],
-   // Mutations you gonna use
-   ['changeProfile', ],
-   // Queries you want to be synced
-   ['isLoggedIn', ],
-   // onData hook
-   console.log,
-   // onError hook
-   console.error
-);
+// Args are optional, here is default values:
+let client = new GraphqlCLient({
+    apiUrl = 'graphql',
+    reqParams = {},
+    schemaUrl = '/schema.json',
+    baseQueryName = 'Query',
+    baseMutationName = 'Mutation',
+    onlyQueries = null,
+    onlyMutations = null,
+    synced = [],
+    onData = () => { },
+    onError = () => { }
+})
 
 // Make a query
 client.query('login', {
@@ -57,21 +52,16 @@ client.mutate('changeProfile', {
 
 Contructor accepts connection params:
 
-- api url ``[str]``
-- requests parameters such as headers, mode and so on ``[dict]``
-
-### ``init``
-
-Before you start querying, call ``init`` method.
-
-Args:
-
-- ``schema`` - valid graphql schema ``object``
-- ``queries`` - list of query names you need to be used
-- ``mutations`` - list of mutation names you need to be used
-- ``synced`` - list of query names that take no parameters to be synced just after ``init``
-- ``onData`` - function called when any data is recieved from server
-- ``onError`` - function called if an error returned from server
+- ``apiUrl`` - default: ``/graphql``
+- ``reqParams`` - requests parameters such as headers, mode and so on - default: ``{}``
+- ``schemaUrl`` - valid graphql schema url to be fetched from - default: ``/schema.json``
+- ``baseQueryName`` - parent query name containing all queries as fields - default: ``Query``
+- ``baseMutationName`` - parent query name containing all mutations as fields - default: ``Mutation``
+- ``onlyQueries`` - list of query names you need to be used only, if ``null`` is passed all parent query fields will be used - default: ``null``
+- ``onlyMutations`` - list of mutations names you need to be used only, if ``null`` is passed all parent mutation fields will be used - default: ``null``
+- ``synced`` - list of query names that take no parameters to be synced just after creating the client - default: ``[]``
+- ``onData`` - function called when any data is recieved from server - default: ``() => { }``
+- ``onError`` - function called if an error returned from server - default: ``() => { }``
 
 If you want to implement some kind of storage - ``onData`` is what you need, all data goes through it.
 
