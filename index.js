@@ -48,63 +48,53 @@ export default class GraphqlClient {
 		};
 	}
 
-	constructor(apiUrl, params) {
+	constructor({
+		apiUrl = '/graphql',
+		reqParams = {},
+		schemaUrl = '/schema.json',
+		baseQueryName = 'Query',
+		baseMutationName = 'Mutation',
+		onlyQueries = null,
+		onlyMutations = null,
+		synced = [],
+		onData = () => { },
+		onError = () => { }
+	}) {
 		this.apiUrl = apiUrl;
-		this.params = params;
-		this._client = client(this.apiUrl, this.params);
-	}
-
-	init(schemaUrl = '/schema.json', queries = [], mutations = [], synced = [], onData = () => { }, onError = () => { }) {
-		this.queries = queries;
-		this.mutations = mutations;
-		this.synced = synced;
+		this.params = reqParams;
 		this.onData = onData;
 		this.onError = onError;
+		this._client = client(this.apiUrl, this.params);
 
-		fetch(schemaUrl)
-			.then(response => response.json())
-			.then(schema => this.schema = schema)
-			.then(() => {
-				var supportedQueries = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.queryType.name)[0].fields;
-				this._updateApiQueries(supportedQueries);
-
-				var supportedMutations = this.schema.data.__schema.types.filter(type => type.name === this.schema.data.__schema.mutationType.name)[0].fields;
-				this._updateApiMutations(supportedMutations);
-
-				this._updateSyncList(supportedQueries)
-					.then((syncedEntities) => this.syncAll(syncedEntities));
-			});
+		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
 	}
 
-	mutate(mutation, args) {
-		var m = this.mutations[mutation];
-		return this.go(m.result.query, args);
-	}
-
-	query(query, args, fields, retryAmount = 0) {
-		if (!this.queries[query] && this.queries.length) {
-			return new Promise((resolve, reject) => {
-				setTimeout(() => {
-					if (retryAmount <= 1000) {
-						resolve(this.query(query, args, fields, retryAmount + 1));
-					} else {
-						reject('Проблемы с сетью');
-					}
-				}, 100);
-			});
-		}
-
-		try {
-			var q;
-			if (fields) {
-				q = this.queries[query].result.queryBuilder(fields);
-			} else {
-				q = this.queries[query].result.query;
+	mutate(mutationName, args) {
+		const result = () => {
+			try {
+				return this.go(
+					this.mutations[mutationName].result.query,
+					args
+				);
+			} catch (TypeError) {
+				console.error(`Trying to perform mutation ${mutationName} that does not exist.`);
 			}
-			return this.go(q, args);
-		} catch (e) {
-			console.error(`Trying to query ${query}`);
-		}
+		};
+		return this.pendingInit ? this.pendingInit.then(result) : result();
+	}
+
+	query(queryName, args, fields) {
+		const result = () => {
+			try {
+				return this.go(
+					fields ? this.queries[queryName].result.queryBuilder(fields) : this.queries[queryName].result.query,
+					args
+				);
+			} catch (TypeError) {
+				console.error(`Trying to query ${queryName} that does not exist.`);
+			}
+		};
+		return this.pendingInit ? this.pendingInit.then(result) : result();
 	}
 
 	/**
@@ -116,7 +106,7 @@ export default class GraphqlClient {
 		var query = `{ ${entity.name} ${this._queryType(entity.type)} }`;
 		return this.go(query, {});
 	}
-	
+
 	/**
 	* Shortcut function to sync a list of entities at once
 	* 
@@ -127,6 +117,29 @@ export default class GraphqlClient {
 			var query = `{ ${updateSyncList.reduce((query, entity) => query + ` ${entity.name} ${this._queryType(entity.type)} `, '')} }`;
 			return this.go(query, {});
 		}
+	}
+
+	_init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced) {
+		this.synced = synced;
+
+		this.pendingInit = fetch(schemaUrl)
+			.then(response => response.json())
+			.then(schema => this.schema = schema)
+			.then(() => {
+				const baseQuery = this._getType(baseQueryName);
+				const baseMutation = this._getType(baseMutationName);
+
+				const queries = baseQuery.fields.filter(field => onlyQueries === null || onlyQueries.indexOf(field.name) >= 0);
+				this.queries = this._updateApiQueries(queries);
+
+				var mutations = baseMutation.fields.filter(field => onlyMutations === null || onlyMutations.indexOf(field.name) >= 0);
+				this.mutations = this._updateApiMutations(mutations);
+
+				this._updateSyncList(queries)
+					.then((syncedEntities) => this.syncAll(syncedEntities));
+
+				delete this.pendingInit;
+			});
 	}
 
 	_getType(typeName) {
@@ -192,25 +205,21 @@ export default class GraphqlClient {
 		};
 	}
 
-	_updateApiQueries(supportedQueries) {
+	_updateApiQueries(queries) {
 		var queryIndex = {};
-		var queries = supportedQueries.filter(supportedQuery => this.queries.indexOf(supportedQuery.name) >= 0);
 
 		for (var query of queries) {
 			queryIndex[query.name] = this._prepareApiQuery(query);
 		}
-		this.queries = queryIndex;
-		return supportedQueries;
+		return queryIndex;
 	}
 
-	_updateApiMutations(supportedMutations) {
+	_updateApiMutations(mutations) {
 		var mutationsIndex = {};
-		var mutations = supportedMutations.filter(supportedMutation => this.mutations.indexOf(supportedMutation.name) >= 0);
 
 		for (var mutation of mutations) {
 			mutationsIndex[mutation.name] = this._prepareApiQuery(mutation, true);
 		}
-		this.mutations = mutationsIndex;
-		return supportedMutations;
+		return mutationsIndex;
 	}
 }
