@@ -43,7 +43,7 @@ export default class GraphqlClient {
 				})
 				.catch((error) => {
 					this.onError(error);
-					return error;
+					throw error;
 				});
 		};
 	}
