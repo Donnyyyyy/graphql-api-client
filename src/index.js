@@ -73,7 +73,7 @@ export default class GraphqlClient {
 		const result = () => {
 			try {
 				return this.go(
-					this.mutations[mutationName].result.query,
+					this.mutations[mutationName].result.queryBuilder(undefined, args),
 					args
 				);
 			} catch (TypeError) {
@@ -87,7 +87,7 @@ export default class GraphqlClient {
 		const result = () => {
 			try {
 				return this.go(
-					fields ? this.queries[queryName].result.queryBuilder(fields) : this.queries[queryName].result.query,
+					this.queries[queryName].result.queryBuilder(fields, args),
 					args
 				);
 			} catch (TypeError) {
@@ -193,7 +193,7 @@ export default class GraphqlClient {
 			query: `${isMutation ? 'mutation' : 'query'}${query.args.length > 0 ? `(${query.args.map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''} {
 			${query.name}${query.args.length > 0 ? `(${query.args.map(arg => `${arg.name}:$${arg.name}`)})` : ''} ${this._queryType(query.type)}
 			}`,
-			queryBuilder: (only_fields) => `${isMutation ? 'mutation' : 'query'}${query.args.length > 0 ? `(${query.args.map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''} {
+			queryBuilder: (args, only_fields) => `${isMutation ? 'mutation' : 'query'}${query.args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''} {
 				${query.name}${query.args.length > 0 ? `(${query.args.map(arg => `${arg.name}:$${arg.name}`)})` : ''} ${this._queryType(query.type, only_fields)}
 			}`,
 			type: query.type,
