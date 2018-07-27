@@ -73,11 +73,11 @@ export default class GraphqlClient {
 		const result = () => {
 			try {
 				return this.go(
-					this.mutations[mutationName].result.queryBuilder(undefined, args),
+					this.mutations[mutationName].result.queryBuilder(args, undefined),
 					args
 				);
-			} catch (TypeError) {
-				console.error(`Trying to perform mutation ${mutationName} that does not exist.`);
+			} catch (err) {
+				console.error(`Trying to perform mutation ${mutationName} that does not exist. (${err})`);
 			}
 		};
 		return this.pendingInit ? this.pendingInit.then(result) : result();
@@ -87,7 +87,7 @@ export default class GraphqlClient {
 		const result = () => {
 			try {
 				return this.go(
-					this.queries[queryName].result.queryBuilder(fields, args),
+					this.queries[queryName].result.queryBuilder(args, fields),
 					args
 				);
 			} catch (TypeError) {
