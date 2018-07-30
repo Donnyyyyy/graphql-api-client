@@ -90,8 +90,8 @@ export default class GraphqlClient {
 					this.queries[queryName].result.queryBuilder(args, fields),
 					args
 				);
-			} catch (TypeError) {
-				console.error(`Trying to query ${queryName} that does not exist.`);
+			} catch (err) {
+				console.error(`Trying to query ${queryName} that does not exist. (${err})`);
 			}
 		};
 		return this.pendingInit ? this.pendingInit.then(result) : result();
@@ -203,11 +203,11 @@ export default class GraphqlClient {
 	}
 
 	_buildArgsDef(query, args) {
-		return `${args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''}`;
+		return `${args && Object.keys(args).length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''}`;
 	}
 
 	_buildArgs(query, args) {
-		return `${args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `${arg.name}:$${arg.name}`)})` : ''}`;
+		return `${args && Object.keys(args).length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `${arg.name}:$${arg.name}`)})` : ''}`;
 	}
 
 	_updateApiQueries(queries) {
