@@ -190,11 +190,8 @@ export default class GraphqlClient {
 			};
 		});
 		var result = {
-			query: `${isMutation ? 'mutation' : 'query'}${query.args.length > 0 ? `(${query.args.map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''} {
-			${query.name}${query.args.length > 0 ? `(${query.args.map(arg => `${arg.name}:$${arg.name}`)})` : ''} ${this._queryType(query.type)}
-			}`,
-			queryBuilder: (args, only_fields) => `${isMutation ? 'mutation' : 'query'}${query.args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''} {
-				${query.name}${query.args.length > 0 ? `(${query.args.map(arg => `${arg.name}:$${arg.name}`)})` : ''} ${this._queryType(query.type, only_fields)}
+			queryBuilder: (args, only_fields) => `${isMutation ? 'mutation' : 'query'} ${this._buildArgsDef(query, args)} {
+				${query.name}${this._buildArgs(query, args)} ${this._queryType(query.type, only_fields)}
 			}`,
 			type: query.type,
 		};
@@ -203,6 +200,14 @@ export default class GraphqlClient {
 			args: args,
 			result: result
 		};
+	}
+
+	_buildArgsDef(query, args) {
+		return `${args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `$${arg.name}:${this._getTypeName(arg.type)}`)})` : ''}`;
+	}
+
+	_buildArgs(query, args) {
+		return `${args.length > 0 ? `(${query.args.filter(arg => arg.name in args).map(arg => `${arg.name}:$${arg.name}`)})` : ''}`;
 	}
 
 	_updateApiQueries(queries) {
