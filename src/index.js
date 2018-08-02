@@ -67,6 +67,9 @@ export default class GraphqlClient {
 		this._client = client(this.apiUrl, this.params);
 
 		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
+
+		this.query('shipments')
+			.then(data => console.log(data.shipments.edges[0].node));
 	}
 
 	mutate(mutationName, args) {
@@ -86,10 +89,11 @@ export default class GraphqlClient {
 	query(queryName, args, fields) {
 		const result = () => {
 			try {
+				const query = this.queries[queryName];
 				return this.go(
-					this.queries[queryName].result.queryBuilder(args, fields),
+					query.result.queryBuilder(args, fields),
 					args
-				);
+				).then(data => this._verbosifyQueryEnums(query.enums, data));
 			} catch (err) {
 				console.error(`Trying to query ${queryName} that does not exist. (${err})`);
 			}
@@ -116,6 +120,46 @@ export default class GraphqlClient {
 		if (updateSyncList.length > 0) {
 			var query = `{ ${updateSyncList.reduce((query, entity) => query + ` ${entity.name} ${this._queryType(entity.type)} `, '')} }`;
 			return this.go(query, {});
+		}
+	}
+
+	_verbosifyQueryEnums(enums, result) {
+		enums.forEach(enumSource => this._verbosifyEnumSource(enumSource.type, enumSource.path.split('.'), result));
+		return result;
+	}
+
+	_verbosifyEnumSource(type, path, root) {
+		if (path.length === 1) {
+			root[path[0]] = this._verbosifyEnum(type, root[path[0]]);
+		} else {
+			const newRoot = root[path[0]];
+			const newPath = path.splice(1);
+
+			if (newRoot.length) {
+				newRoot.forEach(root => this._verbosifyEnumSource(type, newPath.slice(), root));
+			} else {
+				this._verbosifyEnumSource(type, newPath, newRoot);
+			}
+		}
+	}
+
+	_verbosifyEnum(enumType, value) {
+		if (!enumType.enumValues) {
+			enumType = this._getType(enumType.name);
+		}
+		try {
+			const requiredEnumItem = enumType.enumValues.filter(enumValue => enumValue.name === value)[0];
+			return {
+				id: value,
+				name: requiredEnumItem.description
+			};
+		} catch (e) {
+			requiredEnumItem = { description: null };
+		} finally {
+			return {
+				id: value,
+				name: null
+			};
 		}
 	}
 
@@ -198,8 +242,27 @@ export default class GraphqlClient {
 
 		return {
 			args: args,
-			result: result
+			result: result,
+			enums: this._exploreEnums(query.type, query.name),
 		};
+	}
+
+	_exploreEnums(type, path = '') {
+		const interested_in = ['ENUM', 'LIST', 'OBJECT', 'NON_NULL',];
+
+		if (interested_in.indexOf(type.kind) < 0) {
+			return [];
+		}
+
+		if (type.kind === 'OBJECT' && type.fields === undefined) {
+			type = this._getType(type.name);
+		} else if (type.kind === 'LIST') {
+			return this._exploreEnums(type.ofType, path);
+		} else if (type.kind === 'NON_NULL') {
+			return this._exploreEnums(type.ofType, path);
+		}
+
+		return type.kind === 'ENUM' ? { path, type } : type.fields.map(field => this._exploreEnums(field.type, `${path}.${field.name}`)).reduce((a, c) => a.concat(c));
 	}
 
 	_buildArgsDef(query, args) {
