@@ -154,8 +154,6 @@ export default class GraphqlClient {
 				name: requiredEnumItem.description
 			};
 		} catch (e) {
-			requiredEnumItem = { description: null };
-		} finally {
 			return {
 				id: value,
 				name: null
