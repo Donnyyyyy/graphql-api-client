@@ -19,6 +19,10 @@ exports.default = function (d, e) {
 			body: makeBody(i, n, o)
 		}, e);
 		return 0 < o.length && delete q.headers['Content-Type'], fetch(d, q).then(function (r) {
+			if (!r.body) {
+				return r.json();
+			}
+			
 			var reader = r.body.getReader();
 			return reader.read().then(function (_ref) {
 				var value = _ref.value;
