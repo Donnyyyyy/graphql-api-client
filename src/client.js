@@ -41,8 +41,6 @@ export default function (d, e) {
 					return {};
 				}
 			});
-			
-			return r.json();
 		}).then(function (r) {
 			var t = r.data,
 				u = r.errors;
