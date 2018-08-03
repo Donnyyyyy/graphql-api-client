@@ -67,9 +67,6 @@ export default class GraphqlClient {
 		this._client = client(this.apiUrl, this.params);
 
 		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
-
-		this.query('shipments')
-			.then(data => console.log(data.shipments.edges[0].node));
 	}
 
 	mutate(mutationName, args) {

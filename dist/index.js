@@ -124,10 +124,6 @@ var GraphqlClient = function () {
 		this._client = (0, _client2.default)(this.apiUrl, this.params);
 
 		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
-
-		this.query('shipments').then(function (data) {
-			return console.log(data.shipments.edges[0].node);
-		});
 	}
 
 	_createClass(GraphqlClient, [{
