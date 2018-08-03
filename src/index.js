@@ -1,4 +1,4 @@
-import client from './client.min';
+import client from './client';
 
 export default class GraphqlClient {
 
@@ -74,29 +74,28 @@ export default class GraphqlClient {
 
 	mutate(mutationName, args) {
 		const result = () => {
-			try {
-				return this.go(
-					this.mutations[mutationName].result.queryBuilder(args, undefined),
-					args
-				);
-			} catch (err) {
-				console.error(`Trying to perform mutation ${mutationName} that does not exist. (${err})`);
+			const mutation = this.mutations[mutationName];
+			if (mutation === undefined) {
+				console.error(`Trying to perform mutation ${mutationName} that does not exist.`);
 			}
+			return this.go(
+				this.mutations[mutationName].result.queryBuilder(args, undefined),
+				args
+			);
 		};
 		return this.pendingInit ? this.pendingInit.then(result) : result();
 	}
 
 	query(queryName, args, fields) {
 		const result = () => {
-			try {
-				const query = this.queries[queryName];
-				return this.go(
-					query.result.queryBuilder(args, fields),
-					args
-				).then(data => this._verbosifyQueryEnums(query.enums, data));
-			} catch (err) {
-				console.error(`Trying to query ${queryName} that does not exist. (${err})`);
+			const query = this.queries[queryName];
+			if (query === undefined) {
+				console.error(`Trying to perform query ${queryName} that does not exist.`);
 			}
+			return this.go(
+				query.result.queryBuilder(args, fields),
+				args
+			).then(data => this._verbosifyQueryEnums(query.enums, data));
 		};
 		return this.pendingInit ? this.pendingInit.then(result) : result();
 	}

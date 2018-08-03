@@ -8,7 +8,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _client = require('./client.min');
+var _client = require('./client');
 
 var _client2 = _interopRequireDefault(_client);
 
@@ -136,11 +136,11 @@ var GraphqlClient = function () {
 			var _this3 = this;
 
 			var result = function result() {
-				try {
-					return _this3.go(_this3.mutations[mutationName].result.queryBuilder(args, undefined), args);
-				} catch (err) {
-					console.error('Trying to perform mutation ' + mutationName + ' that does not exist. (' + err + ')');
+				var mutation = _this3.mutations[mutationName];
+				if (mutation === undefined) {
+					console.error('Trying to perform mutation ' + mutationName + ' that does not exist.');
 				}
+				return _this3.go(_this3.mutations[mutationName].result.queryBuilder(args, undefined), args);
 			};
 			return this.pendingInit ? this.pendingInit.then(result) : result();
 		}
@@ -150,14 +150,13 @@ var GraphqlClient = function () {
 			var _this4 = this;
 
 			var result = function result() {
-				try {
-					var query = _this4.queries[queryName];
-					return _this4.go(query.result.queryBuilder(args, fields), args).then(function (data) {
-						return _this4._verbosifyQueryEnums(query.enums, data);
-					});
-				} catch (err) {
-					console.error('Trying to query ' + queryName + ' that does not exist. (' + err + ')');
+				var query = _this4.queries[queryName];
+				if (query === undefined) {
+					console.error('Trying to perform query ' + queryName + ' that does not exist.');
 				}
+				return _this4.go(query.result.queryBuilder(args, fields), args).then(function (data) {
+					return _this4._verbosifyQueryEnums(query.enums, data);
+				});
 			};
 			return this.pendingInit ? this.pendingInit.then(result) : result();
 		}
