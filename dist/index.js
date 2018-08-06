@@ -16,6 +16,24 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+var VerboseEnum = function () {
+	function VerboseEnum(id, name) {
+		_classCallCheck(this, VerboseEnum);
+
+		this.name = name;
+		this._id = id;
+	}
+
+	_createClass(VerboseEnum, [{
+		key: 'id',
+		get: function get() {
+			return this._id.substr(2, 3);
+		}
+	}]);
+
+	return VerboseEnum;
+}();
+
 var GraphqlClient = function () {
 	_createClass(GraphqlClient, [{
 		key: '_typeQueryBuilders',
@@ -228,15 +246,9 @@ var GraphqlClient = function () {
 				var requiredEnumItem = enumType.enumValues.filter(function (enumValue) {
 					return enumValue.name === value;
 				})[0];
-				return {
-					id: value,
-					name: requiredEnumItem.description
-				};
+				return new VerboseEnum(id = value, name = requiredEnumItem.description);
 			} catch (e) {
-				return {
-					id: value,
-					name: null
-				};
+				return new VerboseEnum(id = value, name = null);
 			}
 		}
 	}, {

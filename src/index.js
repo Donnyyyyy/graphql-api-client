@@ -1,5 +1,18 @@
 import client from './client';
 
+
+class VerboseEnum {
+	constructor(id, name) {
+		this.name = name;
+		this._id = id;
+	}
+
+	get id() {
+		return this._id.substr(2, 3);
+	}
+}
+
+
 export default class GraphqlClient {
 
 	get _typeQueryBuilders() {
@@ -145,15 +158,15 @@ export default class GraphqlClient {
 		}
 		try {
 			const requiredEnumItem = enumType.enumValues.filter(enumValue => enumValue.name === value)[0];
-			return {
-				id: value,
-				name: requiredEnumItem.description
-			};
+			return new VerboseEnum(
+				id = value,
+				name = requiredEnumItem.description
+			);
 		} catch (e) {
-			return {
-				id: value,
-				name: null
-			};
+			return new VerboseEnum(
+				id = value,
+				name = null
+			);
 		}
 	}
 
