@@ -3,12 +3,22 @@ import client from './client';
 
 class VerboseEnum {
 	constructor(id, name) {
-		this.name = name;
 		this._id = id;
+		this.name = name;
+		this.id = this._id.substr(2);
+		this.camelCaseId = this._id.substr(2);
+		this.anotherId = this._id.substr(2);
+		this.useMe = this._id.substr(2);
+		this.hello = this._id.substr(2);
+		this.a = this._id.substr(2);
 	}
 
-	get id() {
-		return this._id.substr(2, 3);
+	get getId() {
+		return this._id.substr(2);
+	}
+
+	retrieveId() {
+		return this._id.substr(2);
 	}
 }
 
@@ -158,15 +168,10 @@ export default class GraphqlClient {
 		}
 		try {
 			const requiredEnumItem = enumType.enumValues.filter(enumValue => enumValue.name === value)[0];
-			return new VerboseEnum(
-				id = value,
-				name = requiredEnumItem.description
-			);
+			const result = new VerboseEnum(value, requiredEnumItem.description);
+			return result;
 		} catch (e) {
-			return new VerboseEnum(
-				id = value,
-				name = null
-			);
+			return new VerboseEnum(value, null);
 		}
 	}
 

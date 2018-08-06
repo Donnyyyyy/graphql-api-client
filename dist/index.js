@@ -20,14 +20,25 @@ var VerboseEnum = function () {
 	function VerboseEnum(id, name) {
 		_classCallCheck(this, VerboseEnum);
 
-		this.name = name;
 		this._id = id;
+		this.name = name;
+		this.id = this._id.substr(2);
+		this.camelCaseId = this._id.substr(2);
+		this.anotherId = this._id.substr(2);
+		this.useMe = this._id.substr(2);
+		this.hello = this._id.substr(2);
+		this.a = this._id.substr(2);
 	}
 
 	_createClass(VerboseEnum, [{
-		key: 'id',
+		key: 'retrieveId',
+		value: function retrieveId() {
+			return this._id.substr(2);
+		}
+	}, {
+		key: 'getId',
 		get: function get() {
-			return this._id.substr(2, 3);
+			return this._id.substr(2);
 		}
 	}]);
 
@@ -246,9 +257,10 @@ var GraphqlClient = function () {
 				var requiredEnumItem = enumType.enumValues.filter(function (enumValue) {
 					return enumValue.name === value;
 				})[0];
-				return new VerboseEnum(id = value, name = requiredEnumItem.description);
+				var result = new VerboseEnum(value, requiredEnumItem.description);
+				return result;
 			} catch (e) {
-				return new VerboseEnum(id = value, name = null);
+				return new VerboseEnum(value, null);
 			}
 		}
 	}, {
