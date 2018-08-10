@@ -22,12 +22,7 @@ var VerboseEnum = function () {
 
 		this._id = id;
 		this.name = name;
-		this.id = this._id.substr(2);
-		this.camelCaseId = this._id.substr(2);
-		this.anotherId = this._id.substr(2);
-		this.useMe = this._id.substr(2);
-		this.hello = this._id.substr(2);
-		this.a = this._id.substr(2);
+		this.id = this._id ? this._id.substr(2) : null;
 	}
 
 	_createClass(VerboseEnum, [{
