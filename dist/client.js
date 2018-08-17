@@ -19,22 +19,7 @@ exports.default = function (d, e) {
 			body: makeBody(i, n, o)
 		}, e);
 		return 0 < o.length && delete q.headers['Content-Type'], fetch(d, q).then(function (r) {
-			if (!r.body) {
-				return r.json();
-			}
-			
-			var reader = r.body.getReader();
-			return reader.read().then(function (_ref) {
-				var value = _ref.value;
-
-				try {
-					value = JSON.parse(new TextDecoder("utf-8").decode(value));
-					return value;
-				} catch (e) {
-					console.log(e);
-					return {};
-				}
-			});
+			return r.json();
 		}).then(function (r) {
 			var t = r.data,
 			    u = r.errors;
