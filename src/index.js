@@ -1,3 +1,5 @@
+import { WebSocketBridge } from 'django-channels';
+
 import client from './client';
 
 
@@ -68,6 +70,8 @@ export default class GraphqlClient {
 
 	constructor({
 		apiUrl = '/graphql',
+		wsApiUrl = null,
+		wsStreamName = 'graphql',
 		reqParams = {},
 		schemaUrl = '/schema.json',
 		baseQueryName = 'Query',
@@ -76,15 +80,84 @@ export default class GraphqlClient {
 		onlyMutations = null,
 		synced = [],
 		onData = () => { },
-		onError = () => { }
+		onError = () => { },
+		verbose=false,
 	}) {
+		this.verbose = verbose;
 		this.apiUrl = apiUrl;
 		this.params = reqParams;
 		this.onData = onData;
 		this.onError = onError;
 		this._client = client(this.apiUrl, this.params);
 
+		this._initWsClient(wsApiUrl, wsStreamName);
 		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
+	}
+
+	_initWsClient(wsApiUrl, wsStreamName) {
+		if (!wsApiUrl) {
+			return;
+		}
+		this._wsStreamName = wsStreamName;
+		this._wsHandlers = {};
+
+		this._wsclient = new WebSocketBridge();
+		this._wsclient.connect(wsApiUrl);
+		this._wsclient.listen();
+
+		this._wsclient.demultiplex(this._wsStreamName, (action, stream) => {
+			if (this.verbose) {
+				console.debug(action);
+			}
+			try {
+				const data = JSON.parse(action).data;
+				for (let action in data) {
+					const handler = this._wsHandlers[action];
+					if (handler) {
+						handler(data[action]);
+					} else if (this.verbose) {
+						console.debug(`Unhandled ${action} action`);
+					}
+				}
+			} catch (e) {
+				console.log(e);
+				
+				return;
+			}
+		});
+	}
+
+	queryWs(queryName, args = {}, fields = null) {
+		const query = this.queries[queryName];
+		if (query === undefined) {
+			console.error(`Trying to perform query ${queryName} that does not exist.`);
+		}
+		this._actionWs(query, args, fields);
+	}
+
+	mutateWs(mutationName, args) {
+		const mutation = this.mutations[mutationName];
+		if (mutation === undefined) {
+			console.error(`Trying to perform mutation ${mutationName} that does not exist.`);
+		}
+		this._actionWs(mutation, args, fields);
+	}
+
+	_actionWs(action, args = {}, fields = null) {
+		const result = () => {
+			this._wsclient.stream(this._wsStreamName).send({
+				query: action.result.queryBuilder(args, fields),
+				variables: JSON.stringify(args),
+			});
+		};
+		return this.pendingInit ? this.pendingInit.then(result) : result();
+	}
+
+	addWsHandler(query, handler) {
+		if (!this._wsclient) {
+			throw Error('No ws client aviable');
+		}
+		this._wsHandlers[query] = handler;
 	}
 
 	mutate(mutationName, args) {

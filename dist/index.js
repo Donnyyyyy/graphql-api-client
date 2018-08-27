@@ -8,6 +8,8 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
+var _djangoChannels = require('django-channels');
+
 var _client = require('./client');
 
 var _client2 = _interopRequireDefault(_client);
@@ -120,6 +122,10 @@ var GraphqlClient = function () {
 	function GraphqlClient(_ref) {
 		var _ref$apiUrl = _ref.apiUrl,
 		    apiUrl = _ref$apiUrl === undefined ? '/graphql' : _ref$apiUrl,
+		    _ref$wsApiUrl = _ref.wsApiUrl,
+		    wsApiUrl = _ref$wsApiUrl === undefined ? null : _ref$wsApiUrl,
+		    _ref$wsStreamName = _ref.wsStreamName,
+		    wsStreamName = _ref$wsStreamName === undefined ? 'graphql' : _ref$wsStreamName,
 		    _ref$reqParams = _ref.reqParams,
 		    reqParams = _ref$reqParams === undefined ? {} : _ref$reqParams,
 		    _ref$schemaUrl = _ref.schemaUrl,
@@ -137,45 +143,130 @@ var GraphqlClient = function () {
 		    _ref$onData = _ref.onData,
 		    onData = _ref$onData === undefined ? function () {} : _ref$onData,
 		    _ref$onError = _ref.onError,
-		    onError = _ref$onError === undefined ? function () {} : _ref$onError;
+		    onError = _ref$onError === undefined ? function () {} : _ref$onError,
+		    _ref$verbose = _ref.verbose,
+		    verbose = _ref$verbose === undefined ? false : _ref$verbose;
 
 		_classCallCheck(this, GraphqlClient);
 
+		this.verbose = verbose;
 		this.apiUrl = apiUrl;
 		this.params = reqParams;
 		this.onData = onData;
 		this.onError = onError;
 		this._client = (0, _client2.default)(this.apiUrl, this.params);
 
+		this._initWsClient(wsApiUrl, wsStreamName);
 		this._init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced);
 	}
 
 	_createClass(GraphqlClient, [{
-		key: 'mutate',
-		value: function mutate(mutationName, args) {
+		key: '_initWsClient',
+		value: function _initWsClient(wsApiUrl, wsStreamName) {
 			var _this3 = this;
 
+			if (!wsApiUrl) {
+				return;
+			}
+			this._wsStreamName = wsStreamName;
+			this._wsHandlers = {};
+
+			this._wsclient = new _djangoChannels.WebSocketBridge();
+			this._wsclient.connect(wsApiUrl);
+			this._wsclient.listen();
+
+			this._wsclient.demultiplex(this._wsStreamName, function (action, stream) {
+				if (_this3.verbose) {
+					console.debug(action);
+				}
+				try {
+					var data = JSON.parse(action).data;
+					for (var _action in data) {
+						var handler = _this3._wsHandlers[_action];
+						if (handler) {
+							handler(data[_action]);
+						} else if (_this3.verbose) {
+							console.debug('Unhandled ' + _action + ' action');
+						}
+					}
+				} catch (e) {
+					console.log(e);
+
+					return;
+				}
+			});
+		}
+	}, {
+		key: 'queryWs',
+		value: function queryWs(queryName) {
+			var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+			var fields = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+
+			var query = this.queries[queryName];
+			if (query === undefined) {
+				console.error('Trying to perform query ' + queryName + ' that does not exist.');
+			}
+			this._actionWs(query, args, fields);
+		}
+	}, {
+		key: 'mutateWs',
+		value: function mutateWs(mutationName, args) {
+			var mutation = this.mutations[mutationName];
+			if (mutation === undefined) {
+				console.error('Trying to perform mutation ' + mutationName + ' that does not exist.');
+			}
+			this._actionWs(mutation, args, fields);
+		}
+	}, {
+		key: '_actionWs',
+		value: function _actionWs(action) {
+			var _this4 = this;
+
+			var args = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+			var fields = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : null;
+
 			var result = function result() {
-				var mutation = _this3.mutations[mutationName];
+				_this4._wsclient.stream(_this4._wsStreamName).send({
+					query: action.result.queryBuilder(args, fields),
+					variables: JSON.stringify(args)
+				});
+			};
+			return this.pendingInit ? this.pendingInit.then(result) : result();
+		}
+	}, {
+		key: 'addWsHandler',
+		value: function addWsHandler(query, handler) {
+			if (!this._wsclient) {
+				throw Error('No ws client aviable');
+			}
+			this._wsHandlers[query] = handler;
+		}
+	}, {
+		key: 'mutate',
+		value: function mutate(mutationName, args) {
+			var _this5 = this;
+
+			var result = function result() {
+				var mutation = _this5.mutations[mutationName];
 				if (mutation === undefined) {
 					console.error('Trying to perform mutation ' + mutationName + ' that does not exist.');
 				}
-				return _this3.go(_this3.mutations[mutationName].result.queryBuilder(args, undefined), args);
+				return _this5.go(_this5.mutations[mutationName].result.queryBuilder(args, undefined), args);
 			};
 			return this.pendingInit ? this.pendingInit.then(result) : result();
 		}
 	}, {
 		key: 'query',
 		value: function query(queryName, args, fields) {
-			var _this4 = this;
+			var _this6 = this;
 
 			var result = function result() {
-				var query = _this4.queries[queryName];
+				var query = _this6.queries[queryName];
 				if (query === undefined) {
 					console.error('Trying to perform query ' + queryName + ' that does not exist.');
 				}
-				return _this4.go(query.result.queryBuilder(args, fields), args).then(function (data) {
-					return _this4._verbosifyQueryEnums(query.enums, data);
+				return _this6.go(query.result.queryBuilder(args, fields), args).then(function (data) {
+					return _this6._verbosifyQueryEnums(query.enums, data);
 				});
 			};
 			return this.pendingInit ? this.pendingInit.then(result) : result();
@@ -203,11 +294,11 @@ var GraphqlClient = function () {
 	}, {
 		key: 'syncAll',
 		value: function syncAll(updateSyncList) {
-			var _this5 = this;
+			var _this7 = this;
 
 			if (updateSyncList.length > 0) {
 				var query = '{ ' + updateSyncList.reduce(function (query, entity) {
-					return query + (' ' + entity.name + ' ' + _this5._queryType(entity.type) + ' ');
+					return query + (' ' + entity.name + ' ' + _this7._queryType(entity.type) + ' ');
 				}, '') + ' }';
 				return this.go(query, {});
 			}
@@ -215,17 +306,17 @@ var GraphqlClient = function () {
 	}, {
 		key: '_verbosifyQueryEnums',
 		value: function _verbosifyQueryEnums(enums, result) {
-			var _this6 = this;
+			var _this8 = this;
 
 			enums.forEach(function (enumSource) {
-				return _this6._verbosifyEnumSource(enumSource.type, enumSource.path.split('.'), result);
+				return _this8._verbosifyEnumSource(enumSource.type, enumSource.path.split('.'), result);
 			});
 			return result;
 		}
 	}, {
 		key: '_verbosifyEnumSource',
 		value: function _verbosifyEnumSource(type, path, root) {
-			var _this7 = this;
+			var _this9 = this;
 
 			if (path.length === 1) {
 				root[path[0]] = this._verbosifyEnum(type, root[path[0]]);
@@ -235,7 +326,7 @@ var GraphqlClient = function () {
 
 				if (newRoot.length) {
 					newRoot.forEach(function (root) {
-						return _this7._verbosifyEnumSource(type, newPath.slice(), root);
+						return _this9._verbosifyEnumSource(type, newPath.slice(), root);
 					});
 				} else {
 					this._verbosifyEnumSource(type, newPath, newRoot);
@@ -261,33 +352,33 @@ var GraphqlClient = function () {
 	}, {
 		key: '_init',
 		value: function _init(schemaUrl, baseQueryName, baseMutationName, onlyQueries, onlyMutations, synced) {
-			var _this8 = this;
+			var _this10 = this;
 
 			this.synced = synced;
 
 			this.pendingInit = fetch(schemaUrl).then(function (response) {
 				return response.json();
 			}).then(function (schema) {
-				return _this8.schema = schema;
+				return _this10.schema = schema;
 			}).then(function () {
-				var baseQuery = _this8._getType(baseQueryName);
-				var baseMutation = _this8._getType(baseMutationName);
+				var baseQuery = _this10._getType(baseQueryName);
+				var baseMutation = _this10._getType(baseMutationName);
 
 				var queries = baseQuery.fields.filter(function (field) {
 					return onlyQueries === null || onlyQueries.indexOf(field.name) >= 0;
 				});
-				_this8.queries = _this8._updateApiQueries(queries);
+				_this10.queries = _this10._updateApiQueries(queries);
 
 				var mutations = baseMutation.fields.filter(function (field) {
 					return onlyMutations === null || onlyMutations.indexOf(field.name) >= 0;
 				});
-				_this8.mutations = _this8._updateApiMutations(mutations);
+				_this10.mutations = _this10._updateApiMutations(mutations);
 
-				_this8._updateSyncList(queries).then(function (syncedEntities) {
-					return _this8.syncAll(syncedEntities);
+				_this10._updateSyncList(queries).then(function (syncedEntities) {
+					return _this10.syncAll(syncedEntities);
 				});
 
-				delete _this8.pendingInit;
+				delete _this10.pendingInit;
 			});
 		}
 	}, {
@@ -321,11 +412,11 @@ var GraphqlClient = function () {
 	}, {
 		key: '_updateSyncList',
 		value: function _updateSyncList(supportedQueries) {
-			var _this9 = this;
+			var _this11 = this;
 
 			return new Promise(function (resolve, reject) {
 				resolve(supportedQueries.filter(function (query) {
-					return query.name in _this9.synced;
+					return query.name in _this11.synced;
 				}));
 			});
 		}
@@ -347,17 +438,17 @@ var GraphqlClient = function () {
 	}, {
 		key: '_prepareApiQuery',
 		value: function _prepareApiQuery(query, isMutation) {
-			var _this10 = this;
+			var _this12 = this;
 
 			var args = query.args.map(function (arg) {
 				return {
 					name: arg.name,
-					validator: _this10._typeValidators[arg.type.kind]
+					validator: _this12._typeValidators[arg.type.kind]
 				};
 			});
 			var result = {
 				queryBuilder: function queryBuilder(args, only_fields) {
-					return (isMutation ? 'mutation' : 'query') + ' ' + _this10._buildArgsDef(query, args) + ' {\n\t\t\t\t' + query.name + _this10._buildArgs(query, args) + ' ' + _this10._queryType(query.type, only_fields) + '\n\t\t\t}';
+					return (isMutation ? 'mutation' : 'query') + ' ' + _this12._buildArgsDef(query, args) + ' {\n\t\t\t\t' + query.name + _this12._buildArgs(query, args) + ' ' + _this12._queryType(query.type, only_fields) + '\n\t\t\t}';
 				},
 				type: query.type
 			};
@@ -371,7 +462,7 @@ var GraphqlClient = function () {
 	}, {
 		key: '_exploreEnums',
 		value: function _exploreEnums(type) {
-			var _this11 = this;
+			var _this13 = this;
 
 			var path = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : '';
 
@@ -390,7 +481,7 @@ var GraphqlClient = function () {
 			}
 
 			return type.kind === 'ENUM' ? { path: path, type: type } : type.fields.map(function (field) {
-				return _this11._exploreEnums(field.type, path + '.' + field.name);
+				return _this13._exploreEnums(field.type, path + '.' + field.name);
 			}).reduce(function (a, c) {
 				return a.concat(c);
 			});
@@ -398,12 +489,12 @@ var GraphqlClient = function () {
 	}, {
 		key: '_buildArgsDef',
 		value: function _buildArgsDef(query, args) {
-			var _this12 = this;
+			var _this14 = this;
 
 			return '' + (args && Object.keys(args).length > 0 ? '(' + query.args.filter(function (arg) {
 				return arg.name in args;
 			}).map(function (arg) {
-				return '$' + arg.name + ':' + _this12._getTypeName(arg.type);
+				return '$' + arg.name + ':' + _this14._getTypeName(arg.type);
 			}) + ')' : '');
 		}
 	}, {

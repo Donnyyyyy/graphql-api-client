@@ -14,6 +14,8 @@ import schema from '../schema.json';
 // Args are optional, here is default values:
 let client = new GraphqlCLient({
     apiUrl = 'graphql',
+    wsApiUrl = null,
+    wsStreamName = 'graphql',
     reqParams = {},
     schemaUrl = '/schema.json',
     baseQueryName = 'Query',
@@ -22,7 +24,8 @@ let client = new GraphqlCLient({
     onlyMutations = null,
     synced = [],
     onData = () => { },
-    onError = () => { }
+    onError = () => { },
+    vaerbose = false
 })
 
 // Make a query
