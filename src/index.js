@@ -222,6 +222,10 @@ export default class GraphqlClient {
 			const newRoot = root[path[0]];
 			const newPath = path.splice(1);
 
+			if (!newRoot) {
+				return;
+			}
+
 			if (newRoot.length) {
 				newRoot.forEach(root => this._verbosifyEnumSource(type, newPath.slice(), root));
 			} else {

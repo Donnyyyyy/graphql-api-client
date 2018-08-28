@@ -324,6 +324,10 @@ var GraphqlClient = function () {
 				var newRoot = root[path[0]];
 				var newPath = path.splice(1);
 
+				if (!newRoot) {
+					return;
+				}
+
 				if (newRoot.length) {
 					newRoot.forEach(function (root) {
 						return _this9._verbosifyEnumSource(type, newPath.slice(), root);
