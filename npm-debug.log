@@ -1,0 +1,85 @@
+0 info it worked if it ends with ok
+1 verbose cli [ '/usr/bin/node', '/usr/bin/npm', 'publish' ]
+2 info using npm@3.5.2
+3 info using node@v8.10.0
+4 verbose publish [ '.' ]
+5 silly cache add args [ '.', null ]
+6 verbose cache add spec .
+7 silly cache add parsed spec Result {
+7 silly cache add   raw: '.',
+7 silly cache add   scope: null,
+7 silly cache add   name: null,
+7 silly cache add   rawSpec: '.',
+7 silly cache add   spec: '/home/m100/Workspace/graphql-api-client',
+7 silly cache add   type: 'directory' }
+8 verbose addLocalDirectory /home/m100/.npm/graphql-api-client/0.6.1/package.tgz not in flight; packing
+9 info lifecycle graphql-api-client@0.6.1~prepublish: graphql-api-client@0.6.1
+10 silly lifecycle graphql-api-client@0.6.1~prepublish: no script for prepublish, continuing
+11 verbose tar pack [ '/home/m100/.npm/graphql-api-client/0.6.1/package.tgz',
+11 verbose tar pack   '/home/m100/Workspace/graphql-api-client' ]
+12 verbose tarball /home/m100/.npm/graphql-api-client/0.6.1/package.tgz
+13 verbose folder /home/m100/Workspace/graphql-api-client
+14 verbose addLocalTarball adding from inside cache /home/m100/.npm/graphql-api-client/0.6.1/package.tgz
+15 silly cache afterAdd graphql-api-client@0.6.1
+16 verbose afterAdd /home/m100/.npm/graphql-api-client/0.6.1/package/package.json not in flight; writing
+17 verbose afterAdd /home/m100/.npm/graphql-api-client/0.6.1/package/package.json written
+18 silly publish { name: 'graphql-api-client',
+18 silly publish   version: '0.6.1',
+18 silly publish   description: 'Advanced graphql client aimed to simplify client-server communication using graphql schema.',
+18 silly publish   main: 'dist/index.js',
+18 silly publish   scripts: {},
+18 silly publish   repository:
+18 silly publish    { type: 'git',
+18 silly publish      url: 'git+ssh://git@github.com/Donnyyyyy/graphql-api-client.git' },
+18 silly publish   keywords: [ 'graphql', 'api', 'client', 'query', 'builder', 'es6' ],
+18 silly publish   author: { name: 'Dmitrii Donetskii' },
+18 silly publish   license: 'ISC',
+18 silly publish   bugs:
+18 silly publish    { url: 'https://github.com/Donnyyyyy/graphql-api-client/issues' },
+18 silly publish   homepage: 'https://github.com/Donnyyyyy/graphql-api-client#readme',
+18 silly publish   dependencies: { 'django-channels': '1.1.6' },
+18 silly publish   readme: '# GraphQL API client\n\nThis module is a simple graphql API client supported query building.\n\n## Sneaky-peaky code\n\nHere is quick example how it works\n\n```js\nimport GraphqlCLient from \'graphql-api-client\';\n// Your api schema\nimport schema from \'../schema.json\';\n\n// Args are optional, here is default values:\nlet client = new GraphqlCLient({\n    apiUrl = \'graphql\',\n    wsApiUrl = null,\n    wsStreamName = \'graphql\',\n    reqParams = {},\n    schemaUrl = \'/schema.json\',\n    baseQueryName = \'Query\',\n    baseMutationName = \'Mutation\',\n    onlyQueries = null,\n    onlyMutations = null,\n    synced = [],\n    onData = () => { },\n    onError = () => { },\n    vaerbose = false\n})\n\n// Make a query\nclient.query(\'login\', {\n   username: \'some@email.here\',\n   password: \'password here\'\n}).then(data => {\n   let isLoggedIn = data.login;\n   // Some logic\n});\n\n\n// Perform a mutation\nclient.mutate(\'changeProfile\', {\n   data: {\n      firstName: \'John\',\n      lastName: \'White\',\n   }\n}).then(data => {\n   let newProfileData = data.changeProfile;\n});\n```\n\n## Setting up\n\n### Contructor\n\nContructor accepts connection params:\n\n- ``apiUrl`` - default: ``/graphql``\n- ``reqParams`` - requests parameters such as headers, mode and so on - default: ``{}``\n- ``schemaUrl`` - valid graphql schema url to be fetched from - default: ``/schema.json``\n- ``baseQueryName`` - parent query name containing all queries as fields - default: ``Query``\n- ``baseMutationName`` - parent query name containing all mutations as fields - default: ``Mutation``\n- ``onlyQueries`` - list of query names you need to be used only, if ``null`` is passed all parent query fields will be used - default: ``null``\n- ``onlyMutations`` - list of mutations names you need to be used only, if ``null`` is passed all parent mutation fields will be used - default: ``null``\n- ``synced`` - list of query names that take no parameters to be synced just after creating the client - default: ``[]``\n- ``onData`` - function called when any data is recieved from server - default: ``() => { }``\n- ``onError`` - function called if an error returned from server - default: ``() => { }``\n\nIf you want to implement some kind of storage - ``onData`` is what you need, all data goes through it.\n\nTODO: make ``synced`` items to update dynamically through websockets\n\n## Query\n\nTo make a query call\n\n```js\nclient.query(\'queryName\', {\n   param1: data\n})\n```\n\nReturns a ``Promise`` resolving single ``object`` containing keys whose names equal to ``queryName``\n\n## Mutation\n\nTo perform a mutation call\n\n```js\nclient.mutate(\'mutationName\', {\n   param1: data\n})\n```\n\nReturns a ``Promise`` resolving single ``object`` containing keys whose names equal to ``mutationName``\n\n## Notes\n\nAlso supports file uploads, just set a variable to file instance. Backend should handle ``multipart/farm-data`` requests for graphql this way. See [graphql-multipart-request-spec](https://github.com/jaydenseric/graphql-multipart-request-spec) for more info.\n\n',
+18 silly publish   readmeFilename: 'README.md',
+18 silly publish   gitHead: '128e3733eb1dd939cfbfff6d10132ad9027e897f',
+18 silly publish   _id: 'graphql-api-client@0.6.1',
+18 silly publish   _shasum: '15bd4367f578f94eb61872dc7d1a3a1f30e1c9ea',
+18 silly publish   _from: '.' }
+19 verbose getPublishConfig undefined
+20 silly mapToRegistry name graphql-api-client
+21 silly mapToRegistry using default registry
+22 silly mapToRegistry registry https://registry.npmjs.org/
+23 silly mapToRegistry uri https://registry.npmjs.org/graphql-api-client
+24 verbose publish registryBase https://registry.npmjs.org/
+25 silly publish uploading /home/m100/.npm/graphql-api-client/0.6.1/package.tgz
+26 verbose request uri https://registry.npmjs.org/graphql-api-client
+27 verbose request sending authorization for write operation
+28 info attempt registry request try #1 at 2:45:45 PM
+29 verbose request using bearer token for auth
+30 verbose request id 0b3855ee5f88bdfb
+31 http request PUT https://registry.npmjs.org/graphql-api-client
+32 info retry will retry, error on last attempt: Error: Hostname/IP doesn't match certificate's altnames: "Host: registry.npmjs.org. is not in the cert's altnames: DNS:a.sni.fastly.net, DNS:a.sni.global-ssl.fastly.net"
+33 info attempt registry request try #2 at 2:45:55 PM
+34 verbose request using bearer token for auth
+35 http request PUT https://registry.npmjs.org/graphql-api-client
+36 info retry will retry, error on last attempt: Error: Hostname/IP doesn't match certificate's altnames: "Host: registry.npmjs.org. is not in the cert's altnames: DNS:a.sni.fastly.net, DNS:a.sni.global-ssl.fastly.net"
+37 info attempt registry request try #3 at 2:46:55 PM
+38 verbose request using bearer token for auth
+39 http request PUT https://registry.npmjs.org/graphql-api-client
+40 verbose request invalidating /home/m100/.npm/registry.npmjs.org/graphql-api-client on PUT
+41 error publish Failed PUT undefined
+42 verbose stack Error: Hostname/IP doesn't match certificate's altnames: "Host: registry.npmjs.org. is not in the cert's altnames: DNS:a.sni.fastly.net, DNS:a.sni.global-ssl.fastly.net"
+42 verbose stack     at Object.checkServerIdentity (tls.js:223:17)
+42 verbose stack     at TLSSocket.<anonymous> (_tls_wrap.js:1111:29)
+42 verbose stack     at emitNone (events.js:106:13)
+42 verbose stack     at TLSSocket.emit (events.js:208:7)
+42 verbose stack     at TLSSocket._finishInit (_tls_wrap.js:639:8)
+42 verbose stack     at TLSWrap.ssl.onhandshakedone (_tls_wrap.js:469:38)
+43 verbose cwd /home/m100/Workspace/graphql-api-client
+44 error Linux 4.15.0-33-generic
+45 error argv "/usr/bin/node" "/usr/bin/npm" "publish"
+46 error node v8.10.0
+47 error npm  v3.5.2
+48 error Hostname/IP doesn't match certificate's altnames: "Host: registry.npmjs.org. is not in the cert's altnames: DNS:a.sni.fastly.net, DNS:a.sni.global-ssl.fastly.net"
+49 error If you need help, you may report this error at:
+49 error     <https://github.com/npm/npm/issues>
+50 verbose exit [ 1, true ]

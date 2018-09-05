@@ -52,8 +52,10 @@ var GraphqlClient = function () {
 				'SCALAR': function SCALAR() {
 					return '';
 				},
-				'NON_NULL': function NON_NULL(type) {
-					return type.ofType ? _this._queryType(type.ofType) : '';
+				'NON_NULL': function NON_NULL(type, only_fields) {
+					var referencedObjectTypes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+					var depth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+					return type.ofType ? _this._queryType(type.ofType, only_fields, referencedObjectTypes, depth) : '';
 				},
 				'ENUM': function ENUM() {
 					return '';
@@ -65,16 +67,34 @@ var GraphqlClient = function () {
 					}, '') + ' }';
 				},
 				'OBJECT': function OBJECT(type, only_fields) {
+					var referencedObjectTypes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+					var depth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+					referencedObjectTypes.push(type.name);
+
+					if (depth > 5) {
+						console.log(referencedObjectTypes);
+						console.log(_this._getType(type.name).fields.filter(function (field) {
+							return referencedObjectTypes.indexOf(field.type.name) < 0;
+						}));
+						// .map(field => field.type.kind === 'NON_NULL' ? field.type.ofType : field.type)
+						// .filter(type => referencedObjectTypes.indexOf(type.name) < 0))
+					}
+
 					var fields = only_fields ? _this._getType(type.name).fields.filter(function (field) {
 						return only_fields.indexOf(field.name) >= 0;
 					}) : _this._getType(type.name).fields;
-					var fieldQuery = fields.reduce(function (query, field) {
-						return query + (field.name + ' ' + _this._queryType(field.type));
+					var fieldQuery = fields.filter(function (field) {
+						return referencedObjectTypes.indexOf(field.type.name) < 0;
+					}).reduce(function (query, field) {
+						return query + (field.name + ' ' + _this._queryType(field.type, only_fields, referencedObjectTypes, depth + 1));
 					}, '');
-					return '{ ' + fieldQuery + ' }\t';
+					return '{ ' + fieldQuery + ' }';
 				},
-				'LIST': function LIST(type) {
-					return _this._queryType(type.ofType);
+				'LIST': function LIST(type, only_fields) {
+					var referencedObjectTypes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+					var depth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+					return _this._queryType(type.ofType, only_fields, referencedObjectTypes, depth);
 				}
 			};
 		}
@@ -402,7 +422,10 @@ var GraphqlClient = function () {
 	}, {
 		key: '_queryType',
 		value: function _queryType(type, only_fields) {
-			return this._typeQueryBuilders[type.kind](type, only_fields);
+			var referencedObjectTypes = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+			var depth = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+			return this._typeQueryBuilders[type.kind](type, only_fields, referencedObjectTypes, depth + 1);
 		}
 
 		/**
@@ -457,6 +480,8 @@ var GraphqlClient = function () {
 				type: query.type
 			};
 
+			var enums = this._exploreEnums(query.type, query.name);
+
 			return {
 				args: args,
 				result: result,
@@ -475,7 +500,6 @@ var GraphqlClient = function () {
 			if (interested_in.indexOf(type.kind) < 0) {
 				return [];
 			}
-
 			if (type.kind === 'OBJECT' && type.fields === undefined) {
 				type = this._getType(type.name);
 			} else if (type.kind === 'LIST') {
@@ -485,7 +509,7 @@ var GraphqlClient = function () {
 			}
 
 			return type.kind === 'ENUM' ? { path: path, type: type } : type.fields.map(function (field) {
-				return _this13._exploreEnums(field.type, path + '.' + field.name);
+				return path.search(field.name) >= 0 ? [] : _this13._exploreEnums(field.type, path + '.' + field.name);
 			}).reduce(function (a, c) {
 				return a.concat(c);
 			});

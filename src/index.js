@@ -25,21 +25,36 @@ export default class GraphqlClient {
 	get _typeQueryBuilders() {
 		return {
 			'SCALAR': () => '',
-			'NON_NULL': (type) => type.ofType ? this._queryType(type.ofType) : '',
+			'NON_NULL': (type, only_fields, referencedObjectTypes = [], depth = 0) => type.ofType ? this._queryType(type.ofType, only_fields, referencedObjectTypes, depth) : '',
 			'ENUM': () => '',
 			'UNION': (type) => {
 				type = this._getType(type.name);
 				return `{ ${type.possibleTypes.reduce((query, type) => query + ` ... on ${type.name} ${this._queryType(type)} `, '')} }`;
 			},
-			'OBJECT': (type, only_fields) => {
+			'OBJECT': (type, only_fields, referencedObjectTypes = [], depth = 0) => {
+				referencedObjectTypes.push(type.name);
+
+				if (depth > 5) {
+					console.log(referencedObjectTypes);
+					console.log(this._getType(type.name).fields
+						.filter(field => referencedObjectTypes.indexOf(field.type.name) < 0))
+						// .map(field => field.type.kind === 'NON_NULL' ? field.type.ofType : field.type)
+						// .filter(type => referencedObjectTypes.indexOf(type.name) < 0))
+				} else if (depth > 15) {
+					return '';
+				}
+
+
 				var fields = only_fields ? this._getType(type.name).fields.filter(field => only_fields.indexOf(field.name) >= 0) : this._getType(type.name).fields;
-				var fieldQuery = fields.reduce(
-					(query, field) => query + `${field.name} ${this._queryType(field.type)}`,
-					''
-				);
-				return `{ ${fieldQuery} }	`;
+				var fieldQuery = fields
+					.filter(field => referencedObjectTypes.indexOf(field.type.name) < 0)
+					.reduce(
+						(query, field) => query + `${field.name} ${this._queryType(field.type, only_fields, referencedObjectTypes, depth + 1)}`,
+						''
+					);
+				return `{ ${fieldQuery} }`;
 			},
-			'LIST': (type) => this._queryType(type.ofType),
+			'LIST': (type, only_fields, referencedObjectTypes = [], depth = 0) => this._queryType(type.ofType, only_fields, referencedObjectTypes, depth),
 		};
 	}
 
@@ -81,7 +96,7 @@ export default class GraphqlClient {
 		synced = [],
 		onData = () => { },
 		onError = () => { },
-		verbose=false,
+		verbose = false,
 	}) {
 		this.verbose = verbose;
 		this.apiUrl = apiUrl;
@@ -121,7 +136,7 @@ export default class GraphqlClient {
 				}
 			} catch (e) {
 				console.log(e);
-				
+
 				return;
 			}
 		});
@@ -279,8 +294,8 @@ export default class GraphqlClient {
 	 * 
 	 * @param type graphql type
 	 */
-	_queryType(type, only_fields) {
-		return this._typeQueryBuilders[type.kind](type, only_fields);
+	_queryType(type, only_fields, referencedObjectTypes = [], depth = 0) {
+		return this._typeQueryBuilders[type.kind](type, only_fields, referencedObjectTypes, depth + 1);
 	}
 
 	/**
@@ -324,6 +339,8 @@ export default class GraphqlClient {
 			type: query.type,
 		};
 
+		const enums = this._exploreEnums(query.type, query.name);
+
 		return {
 			args: args,
 			result: result,
@@ -337,7 +354,6 @@ export default class GraphqlClient {
 		if (interested_in.indexOf(type.kind) < 0) {
 			return [];
 		}
-
 		if (type.kind === 'OBJECT' && type.fields === undefined) {
 			type = this._getType(type.name);
 		} else if (type.kind === 'LIST') {
@@ -346,7 +362,7 @@ export default class GraphqlClient {
 			return this._exploreEnums(type.ofType, path);
 		}
 
-		return type.kind === 'ENUM' ? { path, type } : type.fields.map(field => this._exploreEnums(field.type, `${path}.${field.name}`)).reduce((a, c) => a.concat(c));
+		return type.kind === 'ENUM' ? { path, type } : type.fields.map(field => (path.search(field.name) >= 0) ? [] : this._exploreEnums(field.type, `${path}.${field.name}`)).reduce((a, c) => a.concat(c));
 	}
 
 	_buildArgsDef(query, args) {
