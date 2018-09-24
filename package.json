@@ -1,8 +1,8 @@
 {
-  "name": "es6-boilerplate",
-  "version": "1.0.0",
-  "description": "Standard ES6 Boilerplate configured with babel, webpack and eslint.",
-  "main": "index.js",
+  "name": "graphql-api-client",
+  "version": "0.6.3",
+  "description": "Advanced graphql client aimed to simplify client-server communication using graphql schema.",
+  "main": "dist/bundle.js",
   "scripts": {
     "start": "npm-run-all --parallel dev:server lint:watch",
     "dev:server": "webpack-dev-server --hot --inline",
@@ -11,11 +11,24 @@
     "lint": "node_modules/.bin/esw webpack.config.* src --color",
     "lint:watch": "npm run lint -- --watch"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Donnyyyyy/graphql-api-client.git"
+  },
   "keywords": [
+    "graphql",
+    "api",
+    "client",
+    "query",
+    "builder",
     "es6"
   ],
-  "author": "metagrover",
+  "author": "Dmitrii Donetskii",
   "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Donnyyyyy/graphql-api-client/issues"
+  },
+  "homepage": "https://github.com/Donnyyyyy/graphql-api-client#readme",
   "devDependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",
@@ -23,7 +36,11 @@
     "eslint": "^3.5.0",
     "eslint-watch": "^2.1.14",
     "npm-run-all": "^4.0.2",
+    "source-map-loader": "^0.2.4",
     "webpack": "^2.4.1",
     "webpack-dev-server": "^2.4.2"
+  },
+  "dependencies": {
+    "django-channels": "^1.1.6"
   }
 }

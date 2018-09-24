@@ -9,7 +9,8 @@ module.exports = {
         rules: [{
             test: /\.js$/,
             exclude: /node_modules/,
-            use: 'babel-loader'
+            use: ['babel-loader', 'source-map-loader', ],
+            enforce: 'pre'
         }]
     }
 };
