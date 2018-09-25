@@ -1,4 +1,16 @@
 {
-    "presets": ["env"],
-    "plugins": ["transform-es2015-modules-commonjs"]
+  "env": {
+    "development": {
+      "presets": ["env"],
+      "plugins": [
+        "add-module-exports"
+      ]
+    },
+    "production": {
+      "presets": ["env", "minify"],
+      "plugins": [
+        "add-module-exports"
+      ]
+    }
+  }
 }
