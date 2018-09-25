@@ -1,6 +1,6 @@
 {
   "name": "graphql-api-client",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Advanced graphql client aimed to simplify client-server communication using graphql schema.",
   "main": "dist/bundle.js",
   "scripts": {
@@ -32,6 +32,8 @@
   "devDependencies": {
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
+    "babel-preset-env": "^1.7.0",
     "babel-preset-es2015": "^6.24.1",
     "eslint": "^3.5.0",
     "eslint-watch": "^2.1.14",
