@@ -1,5 +1,5 @@
 import client from './client';
-import { getRootQuery, getRootMutation, getQueryString, getField } from './utils';
+import { getRootQuery, getRootMutation, getQueryString, getField, getMutationString, getEnumString } from './utils';
 
 
 export default class GraphqlClient {
@@ -24,21 +24,25 @@ export default class GraphqlClient {
   }
 
   query(queryName, args) {
-    const query = getField(queryName);
+    const query = getField(this._rootQuery, queryName);
     const queryString = getQueryString(this.schema, query, args);
     if (this.verbose) {
       console.debug(queryString); // eslint-disable-line no-console
     }
-    this.go(queryString, args);
+    return this.go(queryString, args);
   }
 
   mutate(mutationName, args) {
-    const mutation = getField(mutationName);
-    const mutationString = getQueryString(this.schema, mutation, args);
+    const mutation = getField(this._rootMutation, mutationName);
+    const mutationString = getMutationString(this.schema, mutation, args);
     if (this.verbose) {
       console.debug(mutationString); // eslint-disable-line no-console
     }
-    this.go(mutationString, args);
+    return this.go(mutationString, args);
+  }
+
+  getEnumString(enumName, value) {
+    return getEnumString(this.schema, enumName, value);
   }
 
   get go() {

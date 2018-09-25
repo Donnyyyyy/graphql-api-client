@@ -9,7 +9,10 @@ const TypeQueryBuilders = {
       `${query} ... on ${subtype.name} ${queryType(schema, subtype)} `, '')} }`;
   },
   OBJECT: (schema, type, track = [], d = 0) => {
-    track.push({ d, type: type.name });
+    track.push({
+      d,
+      type: type.name
+    });
 
     const fields = getType(schema, type.name).fields;
     const fieldQuery = fields
@@ -24,7 +27,10 @@ const TypeQueryBuilders = {
 };
 
 const hasSameTypeParent = (track, subtype, currentD) => track.reduce(
-  (has, { type, d }) => has || (subtype.name === type && d < currentD),
+  (has, {
+    type,
+    d
+  }) => has || (subtype.name === type && d < currentD),
   false
 );
 
@@ -69,6 +75,10 @@ export const getQueryString = (schema, query, args) => `query ${buildArgsDef(que
   ' '}${query.name}${buildArgs(query, args)} ${queryType(schema, query.type)}${
   ' '}}`;
 
+export const getMutationString = (schema, mutation, args) => `mutation ${buildArgsDef(mutation, args)} {${
+  ' '}${mutation.name}${buildArgs(mutation, args)} ${queryType(schema, mutation.type)}${
+  ' '}}`;
+
 export const getField = (root, name) => {
   try {
     return root.fields.filter(field => field.name === name)[0];
@@ -76,3 +86,12 @@ export const getField = (root, name) => {
     throw new Error(`failed to find ${name} field`);
   }
 };
+
+export const getEnumString = (schema, enumName, value) => {
+  const enumType = getType(schema, enumName);
+  try {
+    return enumType.enumValues.filter(enumValue => enumValue.name === value)[0].description;
+  } catch (e) {
+    throw new Error(`failed to find ${enumName} enum's value ${value}`);
+  }
+}
