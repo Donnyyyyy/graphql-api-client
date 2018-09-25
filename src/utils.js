@@ -1,14 +1,14 @@
 const TypeQueryBuilders = {
-    'SCALAR': () => '',
-    'NON_NULL': (schema, type, referencedObjectTypes = [], d = 0) =>
+    SCALAR: () => '',
+    NON_NULL: (schema, type, referencedObjectTypes = [], d = 0) =>
         type.ofType ? queryType(schema, type.ofType, referencedObjectTypes, d) : '',
-    'ENUM': () => '',
-    'UNION': (schema, type) => {
+    ENUM: () => '',
+    UNION: (schema, type) => {
         type = getType(schema, type.name);
         return `{ ${type.possibleTypes.reduce((query, type) =>
             `${query} ... on ${type.name} ${queryType(schema, type)} `, '')} }`;
     },
-    'OBJECT': (schema, type, track = [], d = 0) => {
+    OBJECT: (schema, type, track = [], d = 0) => {
         track.push({ d, type: type.name });
 
         var fields = getType(schema, type.name).fields;
@@ -20,7 +20,7 @@ const TypeQueryBuilders = {
                 );
         return `{ ${fieldQuery} }`;
     },
-    'LIST': (schema, type, referencedObjectTypes = [], d = 0) => queryType(schema, type.ofType, referencedObjectTypes, d),
+    LIST: (schema, type, referencedObjectTypes = [], d = 0) => queryType(schema, type.ofType, referencedObjectTypes, d),
 };
 
 const hasSameTypeParent = (track, subtype, currentD) => {
