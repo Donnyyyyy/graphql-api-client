@@ -94,4 +94,4 @@ export const getEnumString = (schema, enumName, value) => {
   } catch (e) {
     throw new Error(`failed to find ${enumName} enum's value ${value}`);
   }
-}
+};
