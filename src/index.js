@@ -1,3 +1,5 @@
+import ReconnectingWebSocket from 'reconnecting-websocket';
+
 import client from './client';
 import { getRootQuery, getRootMutation, getQueryString, getField, getMutationString, getEnumString } from './utils';
 
@@ -23,21 +25,43 @@ export default class GraphqlClient {
     this._rootMutation = this.schema ? getRootMutation(this.schema) : null;
   }
 
+  connectWs({
+    url,
+    options = {},
+    onOpen = () => {},
+    onMessage = () => {},
+    onError = () => {},
+  }) {
+    this._wsClient = new ReconnectingWebSocket(url, [], options);
+    this._wsClient.addEventListener('open', onOpen);
+    this._wsClient.addEventListener('message', onMessage);
+    this._wsClient.addEventListener('error', onError);
+  }
+
+  subscribeWs(subscriptionName, args) {
+    if (!this._wsClient) {
+      throw new Error('You should call `connect ws` method before using ws pipe');
+    }
+    const query = getField(this._rootQuery, subscriptionName);
+    const queryString = getQueryString(this.schema, query, args);
+    return this._wsClient.send(JSON.stringify({
+      stream: 'graphql',
+      payload: {
+        queryString,
+        args
+      }
+    }));
+  }
+
   query(queryName, args) {
     const query = getField(this._rootQuery, queryName);
     const queryString = getQueryString(this.schema, query, args);
-    if (this.verbose) {
-      console.debug(queryString); // eslint-disable-line no-console
-    }
     return this.go(queryString, args);
   }
 
   mutate(mutationName, args) {
     const mutation = getField(this._rootMutation, mutationName);
     const mutationString = getMutationString(this.schema, mutation, args);
-    if (this.verbose) {
-      console.debug(mutationString); // eslint-disable-line no-console
-    }
     return this.go(mutationString, args);
   }
 
@@ -46,14 +70,19 @@ export default class GraphqlClient {
   }
 
   get go() {
-    return (...args) => this._client(...args)
-      .then((data) => {
-        this.onData(data);
-        return data;
-      })
-      .catch((error) => {
-        this.onError(error);
-        throw error;
-      });
+    return (...args) => {
+      if (this.verbose) {
+        console.debug(...args); // eslint-disable-line no-console
+      }
+      return this._client(...args)
+        .then((data) => {
+          this.onData(data);
+          return data;
+        })
+        .catch((error) => {
+          this.onError(error);
+          throw error;
+        });
+    };
   }
 }
