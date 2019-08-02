@@ -1,6 +1,6 @@
 {
   "name": "graphql-api-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Advanced graphql client aimed to simplify client-server communication using graphql schema.",
   "main": "./lib/index.js",
   "scripts": {
