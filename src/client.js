@@ -26,7 +26,8 @@ export default function (d, e) {
       method: 'POST',
       headers: {
         Accept: 'application/json, text/plain, */*',
-        'Content-Type': 'application/json;charset=utf-8'
+        'Content-Type': 'application/json;charset=utf-8',
+        'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
       },
       body: makeBody(i, n, o)
     }, e);
